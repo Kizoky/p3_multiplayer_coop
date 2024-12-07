@@ -4,7 +4,7 @@
 	"addonauthor" "Kizoky"
 	"addonversion" "v0.90"
 	"addondescription" "Makes missions/maps in Postal III multiplayer-friendly, coop-only\n\nPre-path:\v- pdb\n- pw\n- dcr\n- jbe\n- cm"
-	"addonlink" "https://www.moddb.com/mods/postal-iii-ultrapatch"
+	"addonlink" "https://github.com/Kizoky/p3_multiplayer_coop"
 	"postal3script" "scripts/postal3script/ai_scripts.txt"
 	"angelscript" "scripts/angelscript/!as_scripts.txt"
 	"addonminimum" "angelv1.1.0"

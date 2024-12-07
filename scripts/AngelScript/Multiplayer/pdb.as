@@ -116,7 +116,21 @@ class PDB : MissionBase
 			return;
 		
 		// without ! prefix, it teleports all the players
-		tele.FireInput("Teleport", "player");
+		// or so what they have said....
+		//tele.FireInput("Teleport", "player");
+		
+		Vector pos = tele.GetAbsOrigin();
+		
+		// Teleport all the players...
+		array<CP3SObj@> players = server.GetArrayOfPlayers();
+		for (uint i = 0; i < players.length(); i++)
+		{
+			if (players[i].GetBaseEntity() != null)
+			{
+				::Teleport(players[i].GetBaseEntity(), pos);
+				Wait(1.00);
+			}
+		}
 	}
 	
 	// 01 to 06
