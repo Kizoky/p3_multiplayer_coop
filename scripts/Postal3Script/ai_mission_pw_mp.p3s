@@ -1,0 +1,238 @@
+behavior //bh_pw_logic
+{
+	name bh_pw_logic
+    inherited bh_mission_logic_base
+    
+    events
+    {
+        OnReduceHP 	"ExecutePattern st_start.xpt_wazzup?"
+		OnNewGame	"ExecutePattern st_init.xpt_OnNewGame"
+		OnRonDead 	"Pattern st_phaze2.pt_rondead"
+    }
+    
+    states
+	{
+		st_init
+		{
+			Group Neutral
+			Patterns
+			{
+				pt_default
+				{
+					actions 
+					{
+						SetAttr "failed 0"
+                       	SetAttr "droches_left 5,on_change_event:OnDrochaBurn"
+                        SetAttr "moms_left 12,on_change_event:OnMomGone"
+                        SetAttr "shop_HP 1000,0,1000,on_change_event:OnReduceHP"
+						
+						PlayerKarma hide
+						SetAttr "PlayerPath PATH_NONE"
+						SetAttr "HelpersShown 0,0,PW_HELPERS_NUM"
+					}
+				}
+				
+				xpt_OnNewGame
+				{
+					actions
+					{
+						// There's a bug with Postal3Script consts taking over
+						// so PW must be in big capitals..
+						AngelScript "Object:self PW OnNewGame"
+					}
+				}
+			}
+		}
+		
+        st_start
+        {
+            Group Neutral
+            
+			Patterns
+			{
+				pt_default
+				{
+					actions
+					{
+						EntFireInput muzak.mission,Volume:0
+						EntFireInput muzak.strip,Volume:0
+						
+						MissionLog add_primary,snotballs,#P3_MPW_COLLECT_OBJ
+						MissionLog add_primary,ron,#P3_MPW_SECONDARY
+						SetAttr "Snotballs 0"
+						
+						//EntFireInput "lpp,GiveWeapon:p3_weapon_shopvac"
+						//EntFireInput "pcc1,Command:use p3_weapon_shopvac"
+						ExecutePattern st_util.xpt_RefreshHelper
+					}
+					events
+					{
+						OnUser3 "ExecutePattern .xpt_counter"
+						
+						//music switch
+						
+					}
+				}
+				xpt_counter
+				{
+					actions
+					{
+						ChangeAttr "snotballs +1"
+						IfAttr "snotballs == PW_SNOTBALLS_NUM Pattern pt_moms"
+					}
+				}
+				pt_moms
+				{
+					actions 
+					{
+						MissionLog done,snotballs
+						ExecutePattern .xpt_StopAmbientMusic
+						
+						// ��������� ������, ��������� �����
+                        PlayVideo pw_2,1,1
+                        Wait 1
+                        EntFireUser "moms_spwn,1"
+
+                        MissionLog add_primary,moms,#P3_MPW_MOMS_LEFT
+                        AttributeProgressBar "PWHealthPanel,show,shop_HP,show_value"
+						
+						ExecutePattern .xpt_StartAttackMusic
+						
+                        TargetEntByName ron
+                        FireEvent RonScare	
+                        Timer tSpawnMore,20:10
+                        State st_phaze2
+					}
+				}
+				
+				xpt_StopAmbientMusic
+				{
+					actions
+					{
+						EntFireInput tg_strip,Disable
+						EntFireInput tg_shop,Disable
+						EntFireInput muzak.shop,Kill
+						EntFireInput muzak.strip,Kill
+					}
+				}
+				
+				xpt_StartAttackMusic
+				{
+					actions
+					{
+						EntFireInput muzak.shop,StopSound
+						EntFireInput muzak.strip,StopSound
+						
+						EntFireInput muzak.mission,FadeIn:2
+					}
+				}
+				
+				xpt_wazzup?
+                {
+                    actions 
+                    {
+                        IfAttr "shop_HP <= 10 Pattern st_start.pt_game_over"
+                        IfAttr "shop_HP <= 700 and shop_HP > 650 ShowMessage #P3_MPW_WARNING1"
+                        IfAttr "shop_HP <= 400 and shop_HP > 350 ShowMessage #P3_MPW_WARNING2"
+                        IfAttr "shop_HP <= 200 and shop_HP > 100 ShowMessage #P3_MPW_WARNING3"
+                    }
+                }
+				
+				pt_game_over
+                {
+                    actions 
+                    {
+                    	IfAttr "failed == 0 Block begin"
+	                    	//EntFireInput fader,Fade
+	                    	MissionLog fail,moms
+							ShowMessage	#P3_MPW_FAILED
+							Wait 2
+							//EntFireInput pcc1,Command:reload
+							AngelScript "Object:self PW OnMissionFailed"
+						Block end
+                    	SetAttr "failed 1"
+                    }
+                }
+            }
+        }
+        
+        st_phaze2
+        {
+            Group Neutral
+			Patterns
+			{
+				pt_default
+				{
+					actions 
+					{
+					}
+                    events 
+                    {
+                        OnMomGone "ExecutePattern .pt_thatIsAll?"
+                        OnTimer_tSpawnMore "EntFireInput moms_spwn2,Enable"
+                    }
+				}
+                
+                pt_thatIsAll?
+                {
+					actions 
+					{
+                        ExecutePattern st_start.xpt_refreshMomsLeftMessage
+                        IfAttr "moms_left == 0 Block begin"
+                            Pattern .pt_end
+                        Block end
+					}
+				}
+                pt_rondead
+				{
+					actions
+					{
+						//EntFireInput fader,Fade
+						MissionLog fail,ron
+						ShowMessage #P3_PW_RONDEAD
+						Wait 2
+						//EntFireInput "pcc1,Command:reload"
+						AngelScript "Object:self PW OnMissionFailed"
+					}
+				}
+                pt_end
+                {
+                    actions
+                    {
+                        MissionLog done,moms
+						MissionLog done,ron
+                        //EntFireInput fade_out,Fade
+                        Wait 2
+                        //EntFireInput "pcc1,Command:video_exitcmd pw_3 p3_end_mission"
+						AngelScript "Object:self PW ToNextMission"
+                    }
+                }
+            }
+        }
+		
+		st_util
+		{
+			Group Neutral
+			Patterns
+			{
+				xpt_RefreshHelper
+				{
+					actions
+					{
+						Timer tRefreshHelper,10
+						
+						ChangeAttr "HelpersShown 1"
+						
+						IfAttr "HelpersShown == 1 ShowMessage #P3_PW_HELPER01"
+						IfAttr "HelpersShown == 2 ShowMessage #P3_PW_HELPER02"
+					}
+				}
+			}
+		}
+    }
+	events
+	{
+		OnTimer_tRefreshHelper	"ExecutePattern st_util.xpt_RefreshHelper"
+		OnAttrMax_HelpersShown	"Timer tRefreshHelper,0"
+	}
+}
